@@ -1,7 +1,10 @@
 // Firebase Realtime Database service
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, set, get, push, remove, onValue, off, update, serverTimestamp } from 'firebase/database';
-import { firebaseConfig } from './config';
+import { getDatabase, ref, set, get, remove, onValue, off, update, serverTimestamp } from 'firebase/database';
+import { firebaseConfig, isFirebaseConfigured } from './config';
+
+export { isFirebaseConfigured };
+export { firebaseConfig };
 
 // Initialize Firebase
 let app = null;
@@ -12,7 +15,7 @@ function getDb() {
     try {
       app = initializeApp(firebaseConfig);
       db = getDatabase(app);
-    } catch (e) {
+    } catch {
       console.warn('Firebase not configured. Pairing features will be disabled.');
       return null;
     }
@@ -46,7 +49,7 @@ export async function joinWaitingQueue(sessionId, durationMinutes) {
 
   if (otherSessions.length > 0) {
     // Match with the first waiting person
-    const [matchId, matchData] = otherSessions[0];
+    const [matchId] = otherSessions[0];
     const pairId = `${Math.min(sessionId, matchId)}_${Math.max(sessionId, matchId)}`;
 
     await createPair(pairId, sessionId, matchId, durationMinutes);

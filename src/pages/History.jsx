@@ -25,9 +25,12 @@ export function History() {
   const completedSessions = sessions.filter((s) => s.completed).length;
 
   // Streak display
-  const today = new Date().toISOString().split('T')[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-  const streakActive = streak.lastDate === today || streak.lastDate === yesterday;
+  const [streakActive, setStreakActive] = useState(false);
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    setStreakActive(streak.lastDate === today || streak.lastDate === yesterday);
+  }, [streak.lastDate]);
 
   return (
     <div className="history-page page page-enter">

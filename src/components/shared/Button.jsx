@@ -5,7 +5,6 @@ export function Button({
   children,
   variant = 'primary',
   size = 'md',
-  as,
   to,
   href,
   loading = false,

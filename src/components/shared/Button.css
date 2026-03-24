@@ -40,7 +40,7 @@
 /* ── Primary ─────────────────────────────── */
 .btn-primary {
   background: var(--color-accent);
-  color: #0d0d0e;
+  color: var(--color-accent-dark);
   border-color: transparent;
 }
 .btn-primary:hover:not(:disabled) {
@@ -75,11 +75,11 @@
 /* ── Danger ──────────────────────────────── */
 .btn-danger {
   background: var(--color-error);
-  color: #ffffff;
+  color: var(--color-error-text);
   border-color: transparent;
 }
 .btn-danger:hover:not(:disabled) {
-  background: #dc2626;
+  background: var(--color-error-hover);
   transform: translateY(-1px);
 }
 
@@ -126,7 +126,7 @@
   color: inherit;
 }
 .btn-primary.btn-loading::after {
-  border-top-color: #0d0d0e;
+  border-top-color: var(--color-accent-dark);
 }
 .btn-secondary.btn-loading::after,
 .btn-ghost.btn-loading::after {

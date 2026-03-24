@@ -14,9 +14,9 @@ import {
   subscribeToQueueCount,
   markCompleted,
   markEndedEarly,
-  cleanupPair,
   saveSession,
   updateStreak,
+  isFirebaseConfigured,
 } from '../firebase/database';
 import './Session.css';
 
@@ -36,7 +36,7 @@ function formatTime(seconds) {
 export function Session() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { activeSession, startSession, endSession, setActiveSession, ambientSound, setAmbientSound, ambientVolume, setAmbientVolume } = useSession();
+  const { startSession, endSession, ambientSound, setAmbientSound, ambientVolume, setAmbientVolume } = useSession();
   const { play, stop, setVolume, fadeOut } = useAudio();
 
   // Session config from URL
@@ -56,18 +56,25 @@ export function Session() {
   const [pairId, setPairId] = useState(null);
   const [partnerName, setPartnerName] = useState('');
   const [partnerEndedEarly, setPartnerEndedEarly] = useState(false);
-  const [bothCompleted, setBothCompleted] = useState(false);
 
   // Refs
   const intervalRef = useRef(null);
   const unsubscribePairRef = useRef(null);
   const unsubscribeQueueRef = useRef(null);
-  const sessionIdRef = useRef(`session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+  const sessionIdRef = useRef(null);
+  const handleCompleteRef = useRef(null);
+
+  // Generate session ID lazily via useState initializer
+  const [sessionId] = useState(
+    () => `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+  );
+  // Sync to ref for use in callbacks that expect a ref
+  sessionIdRef.current = sessionId;
 
   // ── Start the session ──────────────────────────────────────────
 
   const beginSession = useCallback(async (opts = {}) => {
-    const session = startSession({
+    startSession({
       duration,
       type: sessionType,
       goal: sessionGoal,
@@ -96,6 +103,11 @@ export function Session() {
 
     // Paired: join waiting queue
     const initPaired = async () => {
+      if (!isFirebaseConfigured()) {
+        setPhase('no_firebase');
+        return;
+      }
+
       const id = sessionIdRef.current;
       const result = await joinWaitingQueue(id, duration);
 
@@ -131,7 +143,7 @@ export function Session() {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(intervalRef.current);
-          handleComplete();
+          if (handleCompleteRef.current) handleCompleteRef.current();
           return 0;
         }
         return prev - 1;
@@ -151,11 +163,8 @@ export function Session() {
       const mySessionId = sessionIdRef.current;
       const isA = pair.sessionAId === mySessionId;
       const partnerEndedEarlyVal = isA ? pair.endedEarlyB : pair.endedEarlyA;
-      const partnerCompletedVal = isA ? pair.completedB : pair.completedA;
-      const iCompletedVal = isA ? pair.completedA : pair.completedB;
 
       if (partnerEndedEarlyVal) setPartnerEndedEarly(true);
-      if (partnerCompletedVal && iCompletedVal) setBothCompleted(true);
     });
 
     return () => {
@@ -178,11 +187,11 @@ export function Session() {
     } else {
       play(ambientSound, ambientVolume);
     }
-  }, [ambientSound]);
+  }, [phase, ambientSound, ambientVolume, fadeOut, play]);
 
   // ── Completion ─────────────────────────────────────────────────
 
-  const handleComplete = async () => {
+  const handleComplete = useCallback(async () => {
     fadeOut();
     stop();
 
@@ -195,11 +204,14 @@ export function Session() {
     saveSession(session);
     setCompletedSession(session);
     setPhase('complete');
-  };
+  }, [pairId, fadeOut, stop, endSession]);
+
+  // Keep ref in sync
+  handleCompleteRef.current = handleComplete;
 
   // ── End early ─────────────────────────────────────────────────
 
-  const handleEndEarly = async () => {
+  const handleEndEarly = useCallback(async () => {
     setShowEndConfirm(false);
     fadeOut();
     stop();
@@ -213,7 +225,9 @@ export function Session() {
     saveSession(session);
     setCompletedSession(session);
     setPhase('complete');
-  };
+  }, [pairId, fadeOut, stop, endSession]);
+
+  // ── Cleanup on unmount ─────────────────────────────────────────
 
   // ── Cleanup on unmount ─────────────────────────────────────────
 
@@ -314,6 +328,27 @@ export function Session() {
               }}
             >
               Cancel
+            </Button>
+          </div>
+        )}
+
+        {/* Phase: Firebase not configured */}
+        {phase === 'no_firebase' && (
+          <div className="session-waiting page-enter">
+            <div className="waiting-animation">
+              <div className="waiting-center">
+                <FirebaseIcon />
+              </div>
+            </div>
+            <h2 className="waiting-title">Firebase not configured</h2>
+            <p className="waiting-subtitle">
+              Paired sessions require Firebase Realtime Database to match you with a partner.
+            </p>
+            <p className="waiting-hint">
+              Set up Firebase and add your credentials to <code>src/firebase/config.js</code> to enable paired sessions.
+            </p>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/app')}>
+              Go back
             </Button>
           </div>
         )}
@@ -427,6 +462,15 @@ function StationIcon() {
       <circle cx="14" cy="14" r="5" fill="var(--color-accent)" opacity="0.3"/>
       <circle cx="14" cy="14" r="2.5" fill="var(--color-accent)"/>
       <path d="M14 4v3M14 21v3M4 14h3M21 14h3" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function FirebaseIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <circle cx="14" cy="14" r="10" stroke="var(--color-error)" strokeWidth="2"/>
+      <path d="M10 12l4 8M18 12l-4 8" stroke="var(--color-error)" strokeWidth="2" strokeLinecap="round"/>
     </svg>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/shared/Button';
 import { DurationPicker } from '../components/shared/DurationPicker';
@@ -7,9 +7,13 @@ import { HistoryList } from '../components/history/HistoryList';
 import { getSessions, getStreak } from '../firebase/database';
 import './AppDashboard.css';
 
+const DEFAULT_DURATION_KEY = 'cadence_default_duration';
+
 export function AppDashboard() {
   const navigate = useNavigate();
-  const [duration, setDuration] = useState(25);
+  const [duration, setDuration] = useState(() => {
+    return parseInt(localStorage.getItem(DEFAULT_DURATION_KEY) || '25');
+  });
   const [sessionType, setSessionType] = useState('solo');
   const [sessions, setSessions] = useState([]);
   const [streak, setStreak] = useState({ current: 0, longest: 0, lastDate: null });
@@ -21,20 +25,24 @@ export function AppDashboard() {
   }, []);
 
   // Compute today's stats
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todaySessions = sessions.filter(
-    (s) => new Date(s.startedAt).toISOString().split('T')[0] === todayStr
-  );
-  const todayMinutes = todaySessions.reduce((acc, s) => acc + (s.durationWorked || s.duration), 0);
-  const todayCompleted = todaySessions.filter((s) => s.completed).length;
+  const { todayMinutes, todayCompleted, weekMinutes, weekSessionsCount } = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todaySessions = sessions.filter(
+      (s) => new Date(s.startedAt).toISOString().split('T')[0] === todayStr
+    );
+    const todayMinutes = todaySessions.reduce((acc, s) => acc + (s.durationWorked || s.duration), 0);
+    const todayCompleted = todaySessions.filter((s) => s.completed).length;
 
-  // This week's stats
-  const weekStart = new Date();
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-  weekStart.setHours(0, 0, 0, 0);
-  const weekSessions = sessions.filter((s) => new Date(s.startedAt) >= weekStart);
-  const weekMinutes = weekSessions.reduce((acc, s) => acc + (s.durationWorked || s.duration), 0);
-  const weekSessionsCount = weekSessions.length;
+    // This week's stats
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    const weekSessions = sessions.filter((s) => new Date(s.startedAt) >= weekStart);
+    const weekMinutes = weekSessions.reduce((acc, s) => acc + (s.durationWorked || s.duration), 0);
+    const weekSessionsCount = weekSessions.length;
+
+    return { todayMinutes, todayCompleted, weekMinutes, weekSessionsCount };
+  }, [sessions]);
 
   const handleStart = () => {
     const params = new URLSearchParams({ duration, type: sessionType });

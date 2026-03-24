@@ -5,9 +5,13 @@ import { DurationPicker } from '../components/shared/DurationPicker';
 import { SessionTypePicker } from '../components/shared/SessionTypePicker';
 import './Landing.css';
 
+const DEFAULT_DURATION_KEY = 'cadence_default_duration';
+
 export function Landing() {
   const navigate = useNavigate();
-  const [duration, setDuration] = useState(25);
+  const [duration, setDuration] = useState(() => {
+    return parseInt(localStorage.getItem(DEFAULT_DURATION_KEY) || '25');
+  });
   const [sessionType, setSessionType] = useState('solo');
 
   const handleStart = () => {

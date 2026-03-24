@@ -12,6 +12,10 @@ export const firebaseConfig = {
   appId: "YOUR_APP_ID"
 };
 
+export function isFirebaseConfigured() {
+  return firebaseConfig.apiKey !== 'YOUR_API_KEY' && firebaseConfig.apiKey.length > 0;
+}
+
 // NOTE: Enable Realtime Database in Firebase Console
 // Rules should be:
 // {

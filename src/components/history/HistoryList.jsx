@@ -1,4 +1,3 @@
-import { getSessions, getStreak } from '../../firebase/database';
 import './HistoryList.css';
 
 export function HistoryList({ sessions }) {
@@ -6,7 +5,7 @@ export function HistoryList({ sessions }) {
     return (
       <div className="history-empty">
         <EmptyIcon />
-        <p>No sessions yet. Start your first one above.</p>
+        <p>No sessions yet. Start your first one.</p>
       </div>
     );
   }

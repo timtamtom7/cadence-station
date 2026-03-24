@@ -2,9 +2,13 @@ import { createContext, useContext, useState, useCallback } from 'react';
 
 const SessionContext = createContext(null);
 
+const SOUND_KEY = 'cadence_default_sound';
+
 export function SessionProvider({ children }) {
   const [activeSession, setActiveSession] = useState(null);
-  const [ambientSound, setAmbientSound] = useState('none');
+  const [ambientSound, setAmbientSound] = useState(() => {
+    return localStorage.getItem(SOUND_KEY) || 'none';
+  });
   const [ambientVolume, setAmbientVolume] = useState(0.5);
 
   const startSession = useCallback((options) => {
