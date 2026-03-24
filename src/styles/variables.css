@@ -1,0 +1,107 @@
+/* ============================================
+   Cadence Station — Design Tokens
+   Override shared design system for this app
+   ============================================ */
+
+:root {
+  /* App-specific accent (warm amber — desk lamp) */
+  --color-accent:       #f59e0b;
+  --color-accent-subtle: rgba(245, 158, 11, 0.12);
+  --color-accent-hover:  #d97706;
+  --color-accent-text:   #ffffff;
+
+  /* Partner online indicator */
+  --color-partner:       #22c55e;
+  --color-partner-subtle: rgba(34, 197, 94, 0.12);
+
+  /* Surface palette */
+  --surface-1: #0d0d0e;
+  --surface-2: #18181b;
+  --surface-3: #232326;
+  --surface-4: #2e2e33;
+
+  /* Dark mode (default) */
+  --surface-bg:       var(--surface-1);
+  --surface-card:     var(--surface-2);
+  --surface-elevated: var(--surface-3);
+  --surface-hover:    var(--surface-4);
+
+  --border-subtle:  rgba(255, 255, 255, 0.05);
+  --border-default: rgba(255, 255, 255, 0.07);
+  --border-strong:  rgba(255, 255, 255, 0.14);
+
+  --text-primary:   #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-tertiary:  #6b7280;
+  --text-disabled:  #3f3f46;
+
+  --text-primary-light:   #0d0d0e;
+  --text-secondary-light: #52525b;
+  --text-tertiary-light: #a1a1aa;
+  --text-disabled-light: #d4d4d8;
+
+  /* Semantic */
+  --color-error:        #ef4444;
+  --color-error-subtle: rgba(239, 68, 68, 0.12);
+  --color-success:      #22c55e;
+  --color-success-subtle: rgba(34, 197, 94, 0.12);
+  --color-warning:      #f59e0b;
+  --color-warning-subtle: rgba(245, 158, 11, 0.12);
+
+  /* Shadows */
+  --shadow-sm:  0 1px 4px rgba(0, 0, 0, 0.25);
+  --shadow-md:  0 4px 16px rgba(0, 0, 0, 0.30);
+  --shadow-lg:  0 12px 40px rgba(0, 0, 0, 0.40);
+  --shadow-xl:  0 24px 64px rgba(0, 0, 0, 0.50);
+
+  /* Glass */
+  --glass-bg:        rgba(24, 24, 27, 0.85);
+  --glass-blur:      blur(12px) saturate(180%);
+  --glass-border:    rgba(255, 255, 255, 0.08);
+
+  /* Radius */
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+  --radius-full: 9999px;
+
+  /* Spacing */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Timer font */
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+}
+
+[data-theme="light"] {
+  --surface-bg:       #ffffff;
+  --surface-card:     #f4f4f5;
+  --surface-elevated: #e4e4e7;
+  --surface-hover:    #d4d4d8;
+
+  --border-subtle:  rgba(0, 0, 0, 0.05);
+  --border-default: rgba(0, 0, 0, 0.08);
+  --border-strong:  rgba(0, 0, 0, 0.14);
+
+  --text-primary:   #0d0d0e;
+  --text-secondary: #52525b;
+  --text-tertiary:  #a1a1aa;
+  --text-disabled:  #d4d4d8;
+
+  --glass-bg:       rgba(255, 255, 255, 0.88);
+  --glass-border:   rgba(0, 0, 0, 0.06);
+
+  --shadow-sm:  0 1px 4px rgba(0, 0, 0, 0.08);
+  --shadow-md:  0 4px 16px rgba(0, 0, 0, 0.10);
+  --shadow-lg:  0 12px 40px rgba(0, 0, 0, 0.15);
+}
