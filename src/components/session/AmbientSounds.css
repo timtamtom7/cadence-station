@@ -14,13 +14,20 @@
   font-size: var(--text-sm);
   font-weight: 500;
   cursor: pointer;
-  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .ambient-toggle:hover {
   background: var(--surface-hover);
   color: var(--text-primary);
   border-color: var(--border-strong);
+}
+
+.ambient-toggle.active {
+  background: var(--color-accent-subtle);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: var(--color-accent);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.15);
 }
 
 .ambient-panel {
@@ -75,6 +82,12 @@
   background: var(--color-accent-subtle);
   border-color: var(--color-accent);
   color: var(--color-accent);
+  animation: ambientPulse 2s ease-in-out infinite;
+}
+
+@keyframes ambientPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+  50%       { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12); }
 }
 
 .volume-control {

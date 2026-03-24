@@ -22,6 +22,8 @@ body {
   font-size: var(--text-base);
   line-height: 1.5;
   background-color: var(--surface-bg);
+  background-image: var(--bg-gradient);
+  background-attachment: fixed;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -97,12 +99,12 @@ a:hover { color: var(--color-accent-hover); }
 }
 
 .page-enter {
-  animation: pageIn 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: pageIn 300ms var(--ease-out) forwards;
 }
 
 @keyframes pageIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: scale(0.98) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 /* ── Card ───────────────────────────────── */
@@ -121,16 +123,33 @@ a:hover { color: var(--color-accent-hover); }
 /* ── Glass Card ─────────────────────────── */
 .glass-card {
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-lg);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: background 150ms ease, border-color 150ms ease;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
 }
 
 .glass-card:hover {
   background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* ── Staggered Card Entrance ───────────── */
+.card-enter {
+  animation: cardIn 400ms var(--ease-out) forwards;
+  opacity: 0;
+}
+
+.card-enter:nth-child(1) { animation-delay: 0ms; }
+.card-enter:nth-child(2) { animation-delay: 80ms; }
+.card-enter:nth-child(3) { animation-delay: 160ms; }
+.card-enter:nth-child(4) { animation-delay: 240ms; }
+.card-enter:nth-child(5) { animation-delay: 320ms; }
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* ── Badge ──────────────────────────────── */

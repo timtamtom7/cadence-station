@@ -19,7 +19,7 @@ export function AmbientSounds({ selected, volume, onSoundChange, onVolumeChange 
   return (
     <div className="ambient-sounds">
       <button
-        className="ambient-toggle"
+        className={`ambient-toggle ${selected !== 'none' ? 'active' : ''}`}
         onClick={() => setExpanded(!expanded)}
         aria-expanded={expanded}
       >

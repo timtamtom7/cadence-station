@@ -64,17 +64,20 @@ export function AppDashboard() {
             value={`${todayMinutes}m`}
             sub={`${todayCompleted} session${todayCompleted !== 1 ? 's' : ''}`}
             accent={todayMinutes > 0}
+            className="card-enter"
           />
           <StatCard
             label="This week"
             value={`${Math.round(weekMinutes / 60)}h ${weekMinutes % 60}m`}
             sub={`${weekSessionsCount} session${weekSessionsCount !== 1 ? 's' : ''}`}
+            className="card-enter"
           />
           <StatCard
             label="Streak"
             value={`${streak.current}d`}
             sub={`Best: ${streak.longest}d`}
             accent={streak.current > 0}
+            className="card-enter"
           />
         </div>
 
@@ -133,9 +136,9 @@ export function AppDashboard() {
   );
 }
 
-function StatCard({ label, value, sub, accent }) {
+function StatCard({ label, value, sub, accent, className }) {
   return (
-    <div className={`stat-card card ${accent ? 'accent' : ''}`}>
+    <div className={`stat-card card ${accent ? 'accent' : ''} ${className || ''}`}>
       <span className="stat-label">{label}</span>
       <span className="stat-value">{value}</span>
       <span className="stat-sub">{sub}</span>

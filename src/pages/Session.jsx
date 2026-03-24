@@ -342,7 +342,7 @@ export function Session() {
           <div className="session-active">
             {/* Timer */}
             <div className="timer-section">
-              <ProgressRing progress={progress} size={300} strokeWidth={5}>
+              <ProgressRing progress={progress} size={340} strokeWidth={6}>
                 <span className="timer-display">{formatTime(timeLeft)}</span>
                 <span className="timer-label">
                   {isPaused ? 'Paused' : 'remaining'}
