@@ -4,6 +4,7 @@ import { Button } from '../components/shared/Button';
 import { DurationPicker } from '../components/shared/DurationPicker';
 import { SessionTypePicker } from '../components/shared/SessionTypePicker';
 import { HistoryList } from '../components/history/HistoryList';
+import { useSubscription, TIERS, TIER_LIMITS } from '../context/SubscriptionContext';
 import { getSessions, getStreak } from '../firebase/database';
 import './AppDashboard.css';
 
@@ -11,6 +12,7 @@ const DEFAULT_DURATION_KEY = 'cadence_default_duration';
 
 export function AppDashboard() {
   const navigate = useNavigate();
+  const { tier, todayCount, canStartSession, getLimits, setTier } = useSubscription();
   const [duration, setDuration] = useState(() => {
     return parseInt(localStorage.getItem(DEFAULT_DURATION_KEY) || '25');
   });
@@ -18,11 +20,23 @@ export function AppDashboard() {
   const [sessions, setSessions] = useState([]);
   const [streak, setStreak] = useState({ current: 0, longest: 0, lastDate: null });
   const [goal, setGoal] = useState('');
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+
+  const limits = getLimits();
+  const sessionCheck = canStartSession();
 
   useEffect(() => {
     setSessions(getSessions());
     setStreak(getStreak());
   }, []);
+
+  // Show limit modal when Free user hits limit
+  useEffect(() => {
+    if (tier === TIERS.FREE && !sessionCheck.allowed) {
+      setShowUpgradePrompt(true);
+    }
+  }, [tier, sessionCheck, todayCount]);
 
   // Compute today's stats
   const { todayMinutes, todayCompleted, weekMinutes, weekSessionsCount } = useMemo(() => {
@@ -45,10 +59,19 @@ export function AppDashboard() {
   }, [sessions]);
 
   const handleStart = () => {
+    if (!sessionCheck.allowed) {
+      setShowUpgradePrompt(true);
+      return;
+    }
     const params = new URLSearchParams({ duration, type: sessionType });
     if (goal.trim()) params.set('goal', goal.trim());
     navigate(`/app/session/new?${params.toString()}`);
   };
+
+  const tierLabel = limits.name;
+  const isFree = tier === TIERS.FREE;
+  const isPro = tier === TIERS.PRO;
+  const isPremium = tier === TIERS.PREMIUM;
 
   return (
     <div className="app-dashboard page page-enter">
@@ -61,10 +84,71 @@ export function AppDashboard() {
         <nav className="app-nav">
           <Link to="/app/history" className="nav-link">History</Link>
           <Link to="/app/settings" className="nav-link">Settings</Link>
+          <Link to="/pricing" className="nav-link nav-link-pricing">
+            {isFree && <span className="upgrade-chip">Upgrade</span>}
+            {tierLabel}
+          </Link>
         </nav>
       </header>
 
       <main className="app-main">
+        {/* Tier banner — Free users see upgrade nudge */}
+        {isFree && (
+          <div className="tier-banner">
+            <div className="tier-banner-left">
+              <FreeIcon />
+              <div>
+                <span className="tier-banner-label">Free plan</span>
+                <span className="tier-banner-info">
+                  {todayCount}/{limits.sessionsPerDay} sessions used today
+                </span>
+              </div>
+            </div>
+            <Link to="/pricing" className="tier-banner-action">
+              Upgrade to Pro
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </Link>
+          </div>
+        )}
+
+        {isPro && (
+          <div className="tier-banner tier-banner-pro">
+            <div className="tier-banner-left">
+              <ProIcon />
+              <div>
+                <span className="tier-banner-label">Pro plan</span>
+                <span className="tier-banner-info">Unlimited sessions. Focus analytics included.</span>
+              </div>
+            </div>
+            <Link to="/pricing" className="tier-banner-action">
+              Manage
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </Link>
+          </div>
+        )}
+
+        {isPremium && (
+          <div className="tier-banner tier-banner-premium">
+            <div className="tier-banner-left">
+              <PremiumIcon />
+              <div>
+                <span className="tier-banner-label">Premium plan</span>
+                <span className="tier-banner-info">Team sessions & advanced analytics unlocked.</span>
+              </div>
+            </div>
+            <Link to="/pricing" className="tier-banner-action">
+              Manage
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </Link>
+          </div>
+        )}
+
         {/* Stats row */}
         <div className="stats-row">
           <StatCard
@@ -91,7 +175,12 @@ export function AppDashboard() {
 
         {/* Start session widget */}
         <div className="start-widget card">
-          <h2 className="widget-title">Start a session</h2>
+          <div className="widget-header">
+            <h2 className="widget-title">Start a session</h2>
+            <div className="widget-tier-badge">
+              {tierLabel}
+            </div>
+          </div>
 
           <div className="widget-section">
             <span className="widget-label">Duration</span>
@@ -117,7 +206,28 @@ export function AppDashboard() {
             </div>
           )}
 
-          <Button variant="primary" size="lg" fullWidth onClick={handleStart}>
+          {/* Session limit warning for Free */}
+          {isFree && (
+            <div className="session-limit-hint">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" strokeWidth="1.2"/>
+                <path d="M6.5 5.5v3M6.5 4v.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+              </svg>
+              <span>
+                {todayCount >= limits.sessionsPerDay
+                  ? 'Daily limit reached. Upgrade for unlimited sessions.'
+                  : `${limits.sessionsPerDay - todayCount} free session${limits.sessionsPerDay - todayCount !== 1 ? 's' : ''} left today.`}
+              </span>
+            </div>
+          )}
+
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            onClick={handleStart}
+            disabled={isFree && !sessionCheck.allowed}
+          >
             {sessionType === 'solo' ? 'Start Solo Session' : 'Find a Partner & Start'}
           </Button>
         </div>
@@ -140,6 +250,32 @@ export function AppDashboard() {
           </div>
         )}
       </main>
+
+      {/* Upgrade prompt modal */}
+      {showUpgradePrompt && (
+        <div className="modal-overlay" onClick={() => setShowUpgradePrompt(false)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="upgrade-modal-icon">
+              <FreeIcon />
+            </div>
+            <h3 className="modal-title">Daily limit reached</h3>
+            <p className="modal-body">
+              You've used your 3 free sessions today. Upgrade to Pro for unlimited focus sessions, focus analytics, and more.
+            </p>
+            <div className="modal-actions">
+              <Button variant="ghost" onClick={() => setShowUpgradePrompt(false)}>
+                Maybe later
+              </Button>
+              <Button variant="primary" onClick={() => {
+                setShowUpgradePrompt(false);
+                navigate('/pricing');
+              }}>
+                Upgrade to Pro — $4.99/mo
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -170,6 +306,31 @@ function EmptyIcon() {
     <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ opacity: 0.2 }}>
       <circle cx="24" cy="24" r="18" stroke="currentColor" strokeWidth="1.5"/>
       <path d="M24 14v10l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function FreeIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3"/>
+      <path d="M8 5v3.5M8 10.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function ProIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M8 2l1.5 4h4l-3 2.5 1 4L8 10l-3.5 2.5 1-4L2.5 6h4z" stroke="var(--color-accent)" strokeWidth="1.2" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function PremiumIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M8 2l1.5 4h4l-3 2.5 1 4L8 10l-3.5 2.5 1-4L2.5 6h4z" fill="var(--color-partner)" stroke="var(--color-partner)" strokeWidth="0.5" strokeLinejoin="round"/>
     </svg>
   );
 }

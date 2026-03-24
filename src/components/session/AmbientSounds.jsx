@@ -2,13 +2,48 @@ import { useState } from 'react';
 import './AmbientSounds.css';
 
 const SOUNDS = [
-  { key: 'none',     label: 'None',      icon: MuteIcon },
-  { key: 'brownNoise', label: 'Brown Noise', icon: WaveIcon },
-  { key: 'whiteNoise', label: 'White Noise', icon: WaveIcon },
-  { key: 'cafe',     label: 'Café',      icon: CafeIcon },
-  { key: 'rain',     label: 'Rain',       icon: RainIcon },
-  { key: 'forest',   label: 'Forest',     icon: ForestIcon },
-  { key: 'ocean',    label: 'Ocean',      icon: OceanIcon },
+  {
+    key: 'none',
+    label: 'None',
+    icon: MuteIcon,
+    desc: 'Silence. Pure focus.'
+  },
+  {
+    key: 'brownNoise',
+    label: 'Brown Noise',
+    icon: WaveIcon,
+    desc: 'Deep, rumbling. Blocks distraction.'
+  },
+  {
+    key: 'whiteNoise',
+    label: 'White Noise',
+    icon: WaveIcon,
+    desc: 'Flat, even. A clean slate for concentration.'
+  },
+  {
+    key: 'cafe',
+    label: 'Café',
+    icon: CafeIcon,
+    desc: 'Soft murmur. The world\'s favorite focus environment.'
+  },
+  {
+    key: 'rain',
+    label: 'Rain',
+    icon: RainIcon,
+    desc: 'Gentle rainfall. Familiar, calming.'
+  },
+  {
+    key: 'forest',
+    label: 'Forest',
+    icon: ForestIcon,
+    desc: 'Birds, rustling leaves. Like working in a clearing.'
+  },
+  {
+    key: 'ocean',
+    label: 'Ocean',
+    icon: OceanIcon,
+    desc: 'Slow waves. Best for creative or open-ended work.'
+  },
 ];
 
 export function AmbientSounds({ selected, volume, onSoundChange, onVolumeChange }) {
@@ -37,10 +72,19 @@ export function AmbientSounds({ selected, volume, onSoundChange, onVolumeChange 
                 <button
                   key={s.key}
                   className={`sound-option ${selected === s.key ? 'active' : ''}`}
-                  onClick={() => onSoundChange(s.key)}
+                  onClick={() => {
+                    onSoundChange(s.key);
+                    if (s.key === 'none') {
+                      setExpanded(false);
+                    }
+                  }}
+                  title={s.desc}
                 >
                   <Icon />
-                  <span>{s.label}</span>
+                  <div className="sound-option-text">
+                    <span className="sound-option-label">{s.label}</span>
+                    <span className="sound-option-desc">{s.desc}</span>
+                  </div>
                 </button>
               );
             })}

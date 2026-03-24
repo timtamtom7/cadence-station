@@ -6,6 +6,7 @@ import { PartnerIndicator } from '../components/session/PartnerIndicator';
 import { SessionComplete } from '../components/session/SessionComplete';
 import { Button } from '../components/shared/Button';
 import { useSession } from '../context/SessionContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { useAudio } from '../hooks/useAudio';
 import {
   joinWaitingQueue,
@@ -37,6 +38,7 @@ export function Session() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { startSession, endSession, ambientSound, setAmbientSound, ambientVolume, setAmbientVolume } = useSession();
+  const { recordSession } = useSubscription();
   const { play, stop, setVolume, fadeOut } = useAudio();
 
   // Session config from URL
@@ -45,12 +47,14 @@ export function Session() {
   const sessionGoal = searchParams.get('goal') || null;
 
   // Session state
-  const [phase, setPhase] = useState('loading'); // loading | waiting | matched | active | complete
+  const [phase, setPhase] = useState('loading'); // loading | waiting | matched | active | complete | no_firebase | no_network | pairing_error
   const [timeLeft, setTimeLeft] = useState(duration * 60);
   const [isPaused, setIsPaused] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [completedSession, setCompletedSession] = useState(null);
   const [queueCount, setQueueCount] = useState(0);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [pairingError, setPairingError] = useState(null);
 
   // Paired session state
   const [pairId, setPairId] = useState(null);
@@ -71,6 +75,24 @@ export function Session() {
   // Sync to ref for use in callbacks that expect a ref
   sessionIdRef.current = sessionId;
 
+  // ── Network status monitoring ───────────────────────────────
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => {
+      setIsOnline(false);
+      // If we're in an active session, note it but don't interrupt
+      if (phase === 'waiting' || phase === 'matched') {
+        setPairingError('Network connection lost. Check your internet and try again.');
+      }
+    };
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [phase]);
+
   // ── Start the session ──────────────────────────────────────────
 
   const beginSession = useCallback(async (opts = {}) => {
@@ -85,11 +107,14 @@ export function Session() {
     setTimeLeft(duration * 60);
     setIsPaused(false);
 
+    // Record session for Free tier limit tracking
+    recordSession();
+
     // Start ambient sound if selected
     if (ambientSound !== 'none') {
       play(ambientSound, ambientVolume);
     }
-  }, [duration, sessionType, sessionGoal, startSession, ambientSound, ambientVolume, play]);
+  }, [duration, sessionType, sessionGoal, startSession, ambientSound, ambientVolume, play, recordSession]);
 
   // ── Solo: start immediately ────────────────────────────────────
 
@@ -103,27 +128,38 @@ export function Session() {
 
     // Paired: join waiting queue
     const initPaired = async () => {
+      if (!navigator.onLine) {
+        setPhase('no_network');
+        return;
+      }
+
       if (!isFirebaseConfigured()) {
         setPhase('no_firebase');
         return;
       }
 
-      const id = sessionIdRef.current;
-      const result = await joinWaitingQueue(id, duration);
+      try {
+        const id = sessionIdRef.current;
+        const result = await joinWaitingQueue(id, duration);
 
-      if (result.matched) {
-        setPairId(result.pairId);
-        setPartnerName(getRandomPartnerName());
-        setPhase('matched');
+        if (result.matched) {
+          setPairId(result.pairId);
+          setPartnerName(getRandomPartnerName());
+          setPhase('matched');
 
-        // Brief match screen (1.5s), then begin
-        setTimeout(() => {
-          beginSession({ pairId: result.pairId, partnerId: result.partnerId });
-        }, 1500);
-      } else {
-        setPhase('waiting');
-        // Subscribe to queue count
-        unsubscribeQueueRef.current = subscribeToQueueCount(duration, setQueueCount);
+          // Brief match screen (1.5s), then begin
+          setTimeout(() => {
+            beginSession({ pairId: result.pairId, partnerId: result.partnerId });
+          }, 1500);
+        } else {
+          setPhase('waiting');
+          // Subscribe to queue count
+          unsubscribeQueueRef.current = subscribeToQueueCount(duration, setQueueCount);
+        }
+      } catch (err) {
+        console.warn('Pairing error:', err);
+        setPairingError('Connection error. Could not reach Firebase.');
+        setPhase('pairing_error');
       }
     };
 
@@ -342,14 +378,109 @@ export function Session() {
             </div>
             <h2 className="waiting-title">Firebase not configured</h2>
             <p className="waiting-subtitle">
-              Paired sessions require Firebase Realtime Database to match you with a partner.
+              Paired sessions need Firebase Realtime Database to match you with a partner.
+              It takes about 5 minutes to set up.
+            </p>
+            <div className="firebase-setup-guide">
+              <p className="guide-step"><span className="step-num">1</span> Create a project at <strong>console.firebase.google.com</strong></p>
+              <p className="guide-step"><span className="step-num">2</span> Enable <strong>Realtime Database</strong> in your project</p>
+              <p className="guide-step"><span className="step-num">3</span> Copy your config into <code>src/firebase/config.js</code></p>
+              <p className="guide-step"><span className="step-num">4</span> Set database rules to read/write allowed</p>
+            </div>
+            <p className="waiting-hint">
+              Until then, use <strong>Solo sessions</strong> — they work without Firebase.
+            </p>
+            <div className="waiting-actions">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/app')}>
+                Back to app
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  // Switch to solo mode and restart
+                  navigate(`/app/session/new?duration=${duration}&type=solo`);
+                }}
+              >
+                Start solo session instead
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Phase: Network offline */}
+        {phase === 'no_network' && (
+          <div className="session-waiting page-enter">
+            <div className="waiting-animation">
+              <div className="waiting-center">
+                <NetworkIcon />
+              </div>
+            </div>
+            <h2 className="waiting-title">No network connection</h2>
+            <p className="waiting-subtitle">
+              Paired sessions need an internet connection to match you with a partner.
             </p>
             <p className="waiting-hint">
-              Set up Firebase and add your credentials to <code>src/firebase/config.js</code> to enable paired sessions.
+              Solo sessions work offline. Or reconnect and try again.
             </p>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/app')}>
-              Go back
-            </Button>
+            <div className="waiting-actions">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/app')}>
+                Back to app
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => navigate(`/app/session/new?duration=${duration}&type=solo`)}
+              >
+                Start solo session
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Phase: Pairing error */}
+        {phase === 'pairing_error' && (
+          <div className="session-waiting page-enter">
+            <div className="waiting-animation">
+              <div className="waiting-center">
+                <ErrorIcon />
+              </div>
+            </div>
+            <h2 className="waiting-title">Couldn't find a partner</h2>
+            <p className="waiting-subtitle">
+              {pairingError || 'Something went wrong while matching. This can happen if the connection dropped or Firebase is unavailable.'}
+            </p>
+            <p className="waiting-hint">
+              Try again in a moment, or start a solo session instead.
+            </p>
+            <div className="waiting-actions">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/app')}>
+                Back to app
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={async () => {
+                  setPairingError(null);
+                  setPhase('loading');
+                  // Retry pairing
+                  if (sessionType === 'paired') {
+                    const id = sessionIdRef.current;
+                    const result = await joinWaitingQueue(id, duration).catch(() => ({ matched: false, pairId: null }));
+                    if (result.matched) {
+                      setPairId(result.pairId);
+                      setPartnerName(getRandomPartnerName());
+                      setPhase('matched');
+                      setTimeout(() => beginSession({ pairId: result.pairId, partnerId: result.partnerId }), 1500);
+                    } else {
+                      setPhase('waiting');
+                    }
+                  }
+                }}
+              >
+                Try again
+              </Button>
+            </div>
           </div>
         )}
 
@@ -471,6 +602,24 @@ function FirebaseIcon() {
     <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
       <circle cx="14" cy="14" r="10" stroke="var(--color-error)" strokeWidth="2"/>
       <path d="M10 12l4 8M18 12l-4 8" stroke="var(--color-error)" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function NetworkIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <circle cx="14" cy="14" r="10" stroke="var(--color-warning)" strokeWidth="2"/>
+      <path d="M14 8v6M14 18v2" stroke="var(--color-warning)" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function ErrorIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <circle cx="14" cy="14" r="10" stroke="var(--color-error)" strokeWidth="2"/>
+      <path d="M10 10l8 8M18 10l-8 8" stroke="var(--color-error)" strokeWidth="2" strokeLinecap="round"/>
     </svg>
   );
 }

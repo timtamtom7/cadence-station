@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import { useSubscription, TIERS, TIER_LIMITS } from '../context/SubscriptionContext';
 import { Button } from '../components/shared/Button';
 import './Settings.css';
 
@@ -9,6 +10,7 @@ const SOUND_KEY = 'cadence_default_sound';
 
 export function Settings() {
   const { theme, toggleTheme } = useTheme();
+  const { tier, todayCount } = useSubscription();
   const [defaultDuration, setDefaultDuration] = useState(() => {
     return parseInt(localStorage.getItem(DEFAULT_DURATION_KEY) || '25');
   });
@@ -129,6 +131,52 @@ export function Settings() {
             <Button variant="danger" size="sm" onClick={handleClearData}>
               Clear data
             </Button>
+          </div>
+        </section>
+
+        {/* Subscription */}
+        <section className="settings-section">
+          <h2 className="section-title">Subscription</h2>
+
+          <div className="setting-row">
+            <div className="setting-info">
+              <span className="setting-label">Current plan</span>
+              <span className="setting-desc">Your active Cadence Station plan</span>
+            </div>
+            <div className="subscription-tier-display">
+              {tier === TIERS.FREE && (
+                <span className="tier-badge tier-free">Free</span>
+              )}
+              {tier === TIERS.PRO && (
+                <span className="tier-badge tier-pro">Pro</span>
+              )}
+              {tier === TIERS.PREMIUM && (
+                <span className="tier-badge tier-premium">Premium</span>
+              )}
+            </div>
+          </div>
+
+          {tier === TIERS.FREE && (
+            <div className="setting-row setting-row-upgrade">
+              <div className="setting-info">
+                <span className="setting-label">Upgrade to Pro</span>
+                <span className="setting-desc">Unlimited sessions, focus analytics, calendar integration</span>
+              </div>
+              <Button variant="primary" size="sm" to="/pricing">
+                See plans
+              </Button>
+            </div>
+          )}
+
+          <div className="setting-row">
+            <div className="setting-info">
+              <span className="setting-label">Daily sessions used</span>
+              <span className="setting-desc">
+                {tier === TIERS.FREE
+                  ? `${todayCount} of ${TIER_LIMITS[TIERS.FREE].sessionsPerDay} free sessions today`
+                  : 'Unlimited sessions available'}
+              </span>
+            </div>
           </div>
         </section>
 

@@ -61,3 +61,13 @@
 .partner-dot.ended {
   background: var(--color-warning);
 }
+
+.partner-indicator.offline-indicator {
+  color: var(--text-tertiary);
+  border-color: var(--border-default);
+  background: var(--surface-elevated);
+}
+
+.offline-dot {
+  background: var(--text-disabled);
+}
