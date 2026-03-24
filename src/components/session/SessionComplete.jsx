@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '../shared/Button';
+import { ACHIEVEMENT_META } from '../achievements/Achievements';
 import './SessionComplete.css';
 
 export function SessionComplete({ session, onSave, onDismiss }) {
@@ -8,6 +9,7 @@ export function SessionComplete({ session, onSave, onDismiss }) {
 
   const minutesWorked = session.durationWorked || session.duration;
   const formattedDuration = `${minutesWorked} minute${minutesWorked !== 1 ? 's' : ''}`;
+  const newAchievements = session.newAchievements || [];
 
   const handleSave = () => {
     onSave({ ...session, reflection: reflection.trim() || null });
@@ -32,6 +34,20 @@ export function SessionComplete({ session, onSave, onDismiss }) {
         <p className="complete-partner">
           Your partner wrapped up too. Quiet celebration.
         </p>
+      )}
+
+      {/* New achievements earned */}
+      {newAchievements.length > 0 && (
+        <div className="complete-achievements">
+          <div className="achievements-earned-label">🏆 Achievement{newAchievements.length > 1 ? 's' : ''} earned!</div>
+          <div className="achievements-earned-list">
+            {newAchievements.map((key) => (
+              <div key={key} className="achievement-earned-chip">
+                <span className="achievement-earned-name">{ACHIEVEMENT_META[key]?.name || key}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {!saved ? (

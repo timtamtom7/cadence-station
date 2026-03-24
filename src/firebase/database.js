@@ -23,6 +23,25 @@ function getDb() {
   return db;
 }
 
+/**
+ * Subscribe to Firebase connection status.
+ * Calls callback(true) when connected, callback(false) when disconnected.
+ */
+export function subscribeToConnectionStatus(callback) {
+  const database = getDb();
+  if (!database) {
+    callback(true); // assume connected if no Firebase
+    return () => {};
+  }
+
+  const connectedRef = ref(database, '.info/connected');
+  const handler = (snapshot) => {
+    callback(snapshot.val() === true);
+  };
+  onValue(connectedRef, handler);
+  return () => off(connectedRef);
+}
+
 // ── Presence / Pairing ──────────────────────────────────────────
 
 /**

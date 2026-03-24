@@ -1,0 +1,401 @@
+.stats-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ──────────────────────────────── */
+.stats-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: rgba(13, 13, 14, 0.75);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+}
+
+.stats-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  transition: background 100ms ease, color 100ms ease;
+}
+
+.stats-back:hover {
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.stats-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* ── Main ───────────────────────────────── */
+.stats-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-8);
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Sections ────────────────────────────── */
+.stats-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.section-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* ── Personal Stats Grid ─────────────────── */
+.personal-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+.stat-tile {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-lg);
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.stat-tile:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+.stat-tile.accent .stat-tile-value {
+  color: var(--color-accent);
+}
+
+.stat-tile.accent .stat-tile-icon {
+  color: var(--color-accent);
+}
+
+.stat-tile-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-elevated);
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.stat-tile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stat-tile-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+}
+
+.stat-tile-value {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.stat-tile-sub {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* ── Weekly Goal ─────────────────────────── */
+.weekly-goal-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+}
+
+.goal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.goal-label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.goal-pct {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.goal-bar-track {
+  width: 100%;
+  height: 8px;
+  background: var(--surface-elevated);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.goal-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-accent), #fbbf24);
+  border-radius: var(--radius-full);
+  transition: width 600ms var(--ease-out);
+}
+
+.goal-sub {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ── Leaderboard ─────────────────────────── */
+.leaderboard {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+}
+
+.leaderboard-header {
+  display: grid;
+  grid-template-columns: 56px 1fr 64px 72px 72px;
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 64px 72px 72px;
+  padding: var(--space-3) var(--space-5);
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 100ms ease;
+}
+
+.leaderboard-row:last-child {
+  border-bottom: none;
+}
+
+.leaderboard-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.leaderboard-row.is-you {
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.leaderboard-row.is-you:hover {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.leaderboard-row.rank-1 {
+  background: rgba(255, 215, 0, 0.04);
+}
+
+.leaderboard-row.rank-2 {
+  background: rgba(192, 192, 192, 0.04);
+}
+
+.leaderboard-row.rank-3 {
+  background: rgba(205, 127, 50, 0.04);
+}
+
+.lb-rank {
+  font-size: var(--text-base);
+}
+
+.lb-name {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.lb-you-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+}
+
+.lb-hours {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.lb-sessions {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.lb-streak {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.lb-streak svg {
+  color: var(--color-warning);
+  opacity: 0.7;
+}
+
+.leaderboard-note {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin: 0;
+  text-align: center;
+}
+
+/* ── Achievements ────────────────────────── */
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+.achievement-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-lg);
+  transition: background 150ms ease, border-color 150ms ease, opacity 150ms ease;
+  position: relative;
+}
+
+.achievement-card.earned {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.achievement-card.locked {
+  opacity: 0.5;
+}
+
+.achievement-icon-wrap {
+  flex-shrink: 0;
+}
+
+.achievement-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.achievement-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.achievement-desc {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+
+.achievement-earned-check {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  width: 18px;
+  height: 18px;
+  background: var(--color-success);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: white;
+  font-weight: 700;
+}
+
+/* ── Responsive ─────────────────────────── */
+@media (max-width: 640px) {
+  .stats-header {
+    padding: var(--space-4) var(--space-5);
+  }
+  .stats-main {
+    padding: var(--space-6) var(--space-5) var(--space-8);
+    gap: var(--space-6);
+  }
+  .personal-stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .leaderboard-header,
+  .leaderboard-row {
+    grid-template-columns: 44px 1fr 52px 52px 52px;
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+  .achievements-grid {
+    grid-template-columns: 1fr;
+  }
+}

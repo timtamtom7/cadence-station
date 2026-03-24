@@ -8,6 +8,7 @@ import { Session } from './pages/Session';
 import { History } from './pages/History';
 import { Settings } from './pages/Settings';
 import { Pricing } from './pages/Pricing';
+import { Stats } from './pages/Stats';
 import './styles/global.css';
 
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
               <Route path="/app/session/:id" element={<Session />} />
               <Route path="/app/history" element={<History />} />
               <Route path="/app/settings" element={<Settings />} />
+              <Route path="/app/stats" element={<Stats />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

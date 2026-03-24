@@ -1,18 +1,21 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ProgressRing } from '../components/session/ProgressRing';
-import { AmbientSounds } from '../components/session/AmbientSounds';
+import { SoundMixer } from '../components/session/SoundMixer';
+import { PartnerRadar } from '../components/session/PartnerRadar';
 import { PartnerIndicator } from '../components/session/PartnerIndicator';
 import { SessionComplete } from '../components/session/SessionComplete';
 import { Button } from '../components/shared/Button';
 import { useSession } from '../context/SessionContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useAudio } from '../hooks/useAudio';
+import { checkAndAwardAchievements } from '../components/achievements/Achievements';
 import {
   joinWaitingQueue,
   leaveWaitingQueue,
   subscribeToPair,
   subscribeToQueueCount,
+  subscribeToConnectionStatus,
   markCompleted,
   markEndedEarly,
   saveSession,
@@ -37,9 +40,12 @@ function formatTime(seconds) {
 export function Session() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { startSession, endSession, ambientSound, setAmbientSound, ambientVolume, setAmbientVolume } = useSession();
+  const { startSession, endSession } = useSession();
   const { recordSession } = useSubscription();
-  const { play, stop, setVolume, fadeOut } = useAudio();
+  const { play, stop, setVolume, fadeOut, playBell } = useAudio();
+
+  // Sound mixer state — multiple active sounds with individual volumes
+  const [activeSounds, setActiveSounds] = useState({});
 
   // Session config from URL
   const duration = parseInt(searchParams.get('duration') || '25');
@@ -47,7 +53,7 @@ export function Session() {
   const sessionGoal = searchParams.get('goal') || null;
 
   // Session state
-  const [phase, setPhase] = useState('loading'); // loading | waiting | matched | active | complete | no_firebase | no_network | pairing_error
+  const [phase, setPhase] = useState('loading'); // loading | waiting | matched | active | complete | no_firebase | no_network | pairing_error | connection_lost
   const [timeLeft, setTimeLeft] = useState(duration * 60);
   const [isPaused, setIsPaused] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
@@ -65,6 +71,7 @@ export function Session() {
   const intervalRef = useRef(null);
   const unsubscribePairRef = useRef(null);
   const unsubscribeQueueRef = useRef(null);
+  const unsubscribeConnRef = useRef(null);
   const sessionIdRef = useRef(null);
   const handleCompleteRef = useRef(null);
 
@@ -110,11 +117,11 @@ export function Session() {
     // Record session for Free tier limit tracking
     recordSession();
 
-    // Start ambient sound if selected
-    if (ambientSound !== 'none') {
-      play(ambientSound, ambientVolume);
-    }
-  }, [duration, sessionType, sessionGoal, startSession, ambientSound, ambientVolume, play, recordSession]);
+    // Start all active sounds from the mixer
+    Object.entries(activeSounds).forEach(([key, vol]) => {
+      play(key, vol);
+    });
+  }, [duration, sessionType, sessionGoal, startSession, recordSession, activeSounds, play]);
 
   // ── Solo: start immediately ────────────────────────────────────
 
@@ -208,26 +215,52 @@ export function Session() {
     };
   }, [pairId, phase]);
 
-  // ── Audio volume sync ─────────────────────────────────────────
-
-  useEffect(() => {
-    setVolume(ambientVolume);
-  }, [ambientVolume, setVolume]);
-
-  // ── Ambient sound change ──────────────────────────────────────
+  // ── Firebase connection monitoring ──────────────────────────
 
   useEffect(() => {
     if (phase !== 'active') return;
-    if (ambientSound === 'none') {
-      fadeOut();
-    } else {
-      play(ambientSound, ambientVolume);
-    }
-  }, [phase, ambientSound, ambientVolume, fadeOut, play]);
+
+    unsubscribeConnRef.current = subscribeToConnectionStatus((connected) => {
+      if (!connected) {
+        setPhase('connection_lost');
+      }
+    });
+
+    return () => {
+      if (unsubscribeConnRef.current) unsubscribeConnRef.current();
+    };
+  }, [phase]);
+
+  // ── Sound mixer handlers ─────────────────────────────────────
+
+  const handleAddSound = useCallback((key, vol) => {
+    setActiveSounds((prev) => {
+      if (Object.keys(prev).length >= 4) return prev;
+      const next = { ...prev, [key]: vol };
+      if (phase === 'active') play(key, vol);
+      return next;
+    });
+  }, [phase, play]);
+
+  const handleRemoveSound = useCallback((key) => {
+    setActiveSounds((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      stop(key);
+      return next;
+    });
+  }, [stop]);
+
+  const handleVolumeChange = useCallback((key, vol) => {
+    setActiveSounds((prev) => ({ ...prev, [key]: vol }));
+    setVolume(key, vol);
+  }, [setVolume]);
 
   // ── Completion ─────────────────────────────────────────────────
 
   const handleComplete = useCallback(async () => {
+    // Play the bell before fading out
+    playBell();
     fadeOut();
     stop();
 
@@ -238,9 +271,10 @@ export function Session() {
     const session = endSession(true);
     updateStreak();
     saveSession(session);
-    setCompletedSession(session);
+    const newAchievements = checkAndAwardAchievements(session);
+    setCompletedSession({ ...session, newAchievements });
     setPhase('complete');
-  }, [pairId, fadeOut, stop, endSession]);
+  }, [pairId, fadeOut, stop, playBell, endSession]);
 
   // Keep ref in sync
   handleCompleteRef.current = handleComplete;
@@ -259,7 +293,8 @@ export function Session() {
     const session = endSession(false);
     updateStreak();
     saveSession(session);
-    setCompletedSession(session);
+    const newAchievements = checkAndAwardAchievements(session);
+    setCompletedSession({ ...session, newAchievements });
     setPhase('complete');
   }, [pairId, fadeOut, stop, endSession]);
 
@@ -272,6 +307,7 @@ export function Session() {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (unsubscribePairRef.current) unsubscribePairRef.current();
       if (unsubscribeQueueRef.current) unsubscribeQueueRef.current();
+      if (unsubscribeConnRef.current) unsubscribeConnRef.current();
       stop();
     };
   }, [stop]);
@@ -343,28 +379,30 @@ export function Session() {
         {phase === 'waiting' && (
           <div className="session-waiting page-enter">
             <div className="waiting-animation">
-              <div className="waiting-orbit" />
-              <div className="waiting-center">
-                <StationIcon />
-              </div>
+              <PartnerRadar partnerCount={queueCount} />
             </div>
-            <h2 className="waiting-title">Waiting for a partner</h2>
+            <h2 className="waiting-title">Scanning for a partner</h2>
             <p className="waiting-subtitle">
               {queueCount === 0
-                ? 'Be the first in the queue for this duration.'
-                : `${queueCount} ${queueCount === 1 ? 'person is' : 'people are'} also waiting for a ${duration}-minute session.`}
+                ? 'No one else is waiting — you can be first, or start a solo session.'
+                : `${queueCount} ${queueCount === 1 ? 'person is' : 'people are'} also looking for a ${duration}-min focus partner.`}
             </p>
-            <p className="waiting-hint">You'll be matched automatically.</p>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={async () => {
-                await leaveWaitingQueue(sessionIdRef.current, duration);
-                navigate('/app');
-              }}
-            >
-              Cancel
-            </Button>
+            <p className="waiting-hint">You'll be matched automatically when someone joins.</p>
+            <div className="waiting-actions">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/app')}>
+                Back
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  await leaveWaitingQueue(sessionIdRef.current, duration);
+                  navigate('/app');
+                }}
+              >
+                Cancel search
+              </Button>
+            </div>
           </div>
         )}
 
@@ -433,6 +471,36 @@ export function Session() {
                 onClick={() => navigate(`/app/session/new?duration=${duration}&type=solo`)}
               >
                 Start solo session
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Phase: Connection lost during active session */}
+        {phase === 'connection_lost' && (
+          <div className="session-waiting page-enter">
+            <div className="waiting-animation">
+              <div className="waiting-center">
+                <NetworkIcon />
+              </div>
+            </div>
+            <h2 className="waiting-title">Connection lost</h2>
+            <p className="waiting-subtitle">
+              You lost connection to Firebase. Your session is still running — the timer won't stop.
+            </p>
+            <p className="waiting-hint">
+              When connection restores, your progress will sync automatically.
+            </p>
+            <div className="waiting-actions">
+              <Button variant="ghost" size="sm" onClick={() => setShowEndConfirm(true)}>
+                End session
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setPhase('active')}
+              >
+                Keep going
               </Button>
             </div>
           </div>
@@ -529,11 +597,11 @@ export function Session() {
 
             {/* Controls */}
             <div className="session-controls">
-              <AmbientSounds
-                selected={ambientSound}
-                volume={ambientVolume}
-                onSoundChange={setAmbientSound}
-                onVolumeChange={setAmbientVolume}
+              <SoundMixer
+                activeSounds={activeSounds}
+                onAddSound={handleAddSound}
+                onRemoveSound={handleRemoveSound}
+                onVolumeChange={handleVolumeChange}
               />
 
               <div className="control-buttons">

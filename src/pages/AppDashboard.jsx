@@ -83,6 +83,7 @@ export function AppDashboard() {
         </div>
         <nav className="app-nav">
           <Link to="/app/history" className="nav-link">History</Link>
+          <Link to="/app/stats" className="nav-link">Stats</Link>
           <Link to="/app/settings" className="nav-link">Settings</Link>
           <Link to="/pricing" className="nav-link nav-link-pricing">
             {isFree && <span className="upgrade-chip">Upgrade</span>}
