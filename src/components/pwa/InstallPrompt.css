@@ -1,0 +1,31 @@
+.pwa-notification-prompt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--color-surface-2, #1a1a2e);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--color-text-secondary, #a0a0b0);
+}
+
+.pwa-notification-prompt svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.pwa-notification-prompt span {
+  flex: 1;
+}
+
+.pwa-notif-btn {
+  background: var(--color-accent, #6C63FF);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}

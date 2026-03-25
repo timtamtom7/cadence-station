@@ -1,0 +1,33 @@
+{
+  "name": "cadence-station-menubar",
+  "version": "1.0.0",
+  "description": "macOS menu bar app for Cadence Station focus sessions",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --mac",
+    "pack": "electron-builder --dir"
+  },
+  "author": "Cadence Station",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.4.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.cadencestation.menubar",
+    "productName": "Cadence Station",
+    "category": "public.app-category.productivity",
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "../../public/icon-512.png",
+      "extendInfo": {
+        "LSUIElement": true
+      }
+    },
+    "files": [
+      "src/**/*",
+      "../../public/**/*"
+    ]
+  }
+}

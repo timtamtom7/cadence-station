@@ -253,6 +253,48 @@
   background: rgba(245, 158, 11, 0.03);
 }
 
+/* ── Notification Toggle ─────────────────── */
+.notif-toggle {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 200ms ease;
+  flex-shrink: 0;
+}
+
+.notif-toggle.off {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-default);
+}
+
+.notif-toggle.on {
+  background: var(--color-accent);
+}
+
+.notif-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 200ms ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.notif-toggle.on .notif-toggle-thumb {
+  transform: translateX(20px);
+}
+
+/* ── Integration Icons ────────────────────── */
+.setting-label svg {
+  flex-shrink: 0;
+}
+
 /* ── Responsive ────────────────────────── */
 @media (max-width: 640px) {
   .settings-header {

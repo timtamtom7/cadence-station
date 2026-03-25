@@ -4,12 +4,34 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Cadence Station — Focus timers with accountability partners. Find your rhythm. Together." />
-    <meta name="theme-color" content="#0d0d0e" />
+    <meta name="theme-color" content="#6C63FF" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Cadence Station" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
     <title>Cadence Station — Find your rhythm. Together.</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Register PWA service worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+
+      // Hook into beforeinstallprompt so the React app can use it
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        if (typeof window.__cadenceRegisterInstallPrompt === 'function') {
+          window.__cadenceRegisterInstallPrompt(e);
+        }
+      });
+    </script>
   </body>
 </html>

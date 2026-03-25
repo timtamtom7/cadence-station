@@ -6,13 +6,20 @@ import { SessionTypePicker } from '../components/shared/SessionTypePicker';
 import { HistoryList } from '../components/history/HistoryList';
 import { useSubscription, TIERS, TIER_LIMITS } from '../context/SubscriptionContext';
 import { getSessions, getStreak } from '../firebase/database';
+import { usePWAInstall, PWANotificationPermission } from '../components/pwa/InstallPrompt';
 import './AppDashboard.css';
 
 const DEFAULT_DURATION_KEY = 'cadence_default_duration';
+const PWA_INSTALL_KEY = 'cadence_pwa_install_dismissed';
 
 export function AppDashboard() {
   const navigate = useNavigate();
   const { tier, todayCount, canStartSession, getLimits, setTier } = useSubscription();
+  const { canInstall, install } = usePWAInstall();
+  const [pwaDismissed, setPwaDismissed] = useState(
+    localStorage.getItem(PWA_INSTALL_KEY) === 'true'
+  );
+  const showInstallBanner = canInstall && !pwaDismissed;
   const [duration, setDuration] = useState(() => {
     return parseInt(localStorage.getItem(DEFAULT_DURATION_KEY) || '25');
   });
@@ -75,6 +82,32 @@ export function AppDashboard() {
 
   return (
     <div className="app-dashboard page page-enter">
+      {/* PWA Install Banner */}
+      {showInstallBanner && (
+        <div className="pwa-install-banner">
+          <div className="pwa-install-left">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 2v8M5 7l3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span>Install Cadence Station for quick access</span>
+          </div>
+          <div className="pwa-install-actions">
+            <button className="pwa-install-btn-secondary" onClick={() => {
+              localStorage.setItem(PWA_INSTALL_KEY, 'true');
+              setPwaDismissed(true);
+            }}>
+              Not now
+            </button>
+            <button className="pwa-install-btn-primary" onClick={install}>
+              Install
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Notification permission hint */}
+      <PWANotificationPermission />
+
       {/* Header */}
       <header className="app-header">
         <div className="app-logo">

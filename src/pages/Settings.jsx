@@ -1,9 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useSubscription, TIERS, TIER_LIMITS } from '../context/SubscriptionContext';
 import { Button } from '../components/shared/Button';
 import './Settings.css';
+
+const INTEGRATIONS_KEY = 'cadence_integrations';
+
+// Integration state shape
+// {
+//   googleCalendar: { connected: false, syncEnabled: false },
+//   notion: { connected: false, pageId: '' },
+//   slack: { connected: false, channel: '' },
+// }
+
+function loadIntegrations() {
+  try {
+    return JSON.parse(localStorage.getItem(INTEGRATIONS_KEY) || '{}');
+  } catch { return {}; }
+}
+
+function saveIntegrations(data) {
+  localStorage.setItem(INTEGRATIONS_KEY, JSON.stringify(data));
+}
 
 const DEFAULT_DURATION_KEY = 'cadence_default_duration';
 const SOUND_KEY = 'cadence_default_sound';
@@ -18,12 +37,25 @@ export function Settings() {
     return localStorage.getItem(SOUND_KEY) || 'none';
   });
   const [saved, setSaved] = useState(false);
+  const [integrations, setIntegrations] = useState(loadIntegrations);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [showNotionModal, setShowNotionModal] = useState(false);
+  const [showSlackModal, setShowSlackModal] = useState(false);
+
+  const limits = useSubscription().getLimits();
+  const hasCalendarInt = limits.hasCalendarIntegration;
+  const hasProFeatures = tier !== TIERS.FREE;
 
   const handleSave = () => {
     localStorage.setItem(DEFAULT_DURATION_KEY, String(defaultDuration));
     localStorage.setItem(SOUND_KEY, defaultSound);
+    saveIntegrations(integrations);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const updateIntegration = (key, values) => {
+    setIntegrations((prev) => ({ ...prev, [key]: { ...prev[key], ...values } }));
   };
 
   const handleClearData = () => {
@@ -134,6 +166,123 @@ export function Settings() {
           </div>
         </section>
 
+        {/* Integrations */}
+        <section className="settings-section">
+          <h2 className="section-title">Integrations</h2>
+
+          {/* Google Calendar */}
+          <div className="setting-row">
+            <div className="setting-info">
+              <span className="setting-label">
+                <GoogleCalendarIcon /> Google Calendar
+              </span>
+              <span className="setting-desc">
+                {integrations.googleCalendar?.connected
+                  ? 'Connected — auto-blocks focus time'
+                  : 'Block focus time on your calendar'}
+              </span>
+            </div>
+            {hasCalendarInt ? (
+              <Button
+                variant={integrations.googleCalendar?.connected ? 'ghost' : 'primary'}
+                size="sm"
+                onClick={() => {
+                  if (integrations.googleCalendar?.connected) {
+                    updateIntegration('googleCalendar', { connected: false, syncEnabled: false });
+                  } else {
+                    setShowCalendarModal(true);
+                  }
+                }}
+              >
+                {integrations.googleCalendar?.connected ? 'Disconnect' : 'Connect'}
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" to="/pricing">
+                Pro required
+              </Button>
+            )}
+          </div>
+
+          {/* Notion */}
+          <div className="setting-row">
+            <div className="setting-info">
+              <span className="setting-label">
+                <NotionIcon /> Notion
+              </span>
+              <span className="setting-desc">
+                {integrations.notion?.connected
+                  ? 'Connected — log sessions to a page'
+                  : 'Track focus sessions in a Notion database'}
+              </span>
+            </div>
+            {hasProFeatures ? (
+              <Button
+                variant={integrations.notion?.connected ? 'ghost' : 'primary'}
+                size="sm"
+                onClick={() => {
+                  if (integrations.notion?.connected) {
+                    updateIntegration('notion', { connected: false, pageId: '' });
+                  } else {
+                    setShowNotionModal(true);
+                  }
+                }}
+              >
+                {integrations.notion?.connected ? 'Disconnect' : 'Connect'}
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" to="/pricing">
+                Pro required
+              </Button>
+            )}
+          </div>
+
+          {/* Slack */}
+          <div className="setting-row">
+            <div className="setting-info">
+              <span className="setting-label">
+                <SlackIcon /> Slack
+              </span>
+              <span className="setting-desc">
+                {integrations.slack?.connected
+                  ? `Broadcasting to #${integrations.slack.channel || 'focus'}`
+                  : "Broadcast your 'focus mode' status"}
+              </span>
+            </div>
+            {hasProFeatures ? (
+              <Button
+                variant={integrations.slack?.connected ? 'ghost' : 'primary'}
+                size="sm"
+                onClick={() => {
+                  if (integrations.slack?.connected) {
+                    updateIntegration('slack', { connected: false, channel: '' });
+                  } else {
+                    setShowSlackModal(true);
+                  }
+                }}
+              >
+                {integrations.slack?.connected ? 'Disconnect' : 'Connect'}
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" to="/pricing">
+                Pro required
+              </Button>
+            )}
+          </div>
+
+          {/* Push Notifications */}
+          <div className="setting-row">
+            <div className="setting-info">
+              <span className="setting-label">
+                <NotificationIcon /> Push notifications
+              </span>
+              <span className="setting-desc">
+                Session reminders and streak alerts
+              </span>
+            </div>
+            <NotificationToggle integrations={integrations} updateIntegration={updateIntegration} />
+          </div>
+        </section>
+
         {/* Subscription */}
         <section className="settings-section">
           <h2 className="section-title">Subscription</h2>
@@ -225,6 +374,86 @@ function SunIcon() {
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
       <circle cx="7" cy="7" r="3" stroke="currentColor" strokeWidth="1.3"/>
       <path d="M7 1v2M7 11v2M1 7h2M11 7h2M2.9 2.9l1.4 1.4M9.7 9.7l1.4 1.4M2.9 11.1l1.4-1.4M9.7 4.3l1.4-1.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function NotificationToggle({ integrations, updateIntegration }) {
+  const [enabled, setEnabled] = useState(integrations.notifications?.enabled ?? false);
+  const [supported, setSupported] = useState(true);
+
+  useEffect(() => {
+    if (typeof Notification === 'undefined' || !('Notification' in window)) {
+      setSupported(false);
+    }
+  }, []);
+
+  const toggle = async () => {
+    if (!enabled) {
+      if (Notification.permission === 'default') {
+        const result = await Notification.requestPermission();
+        if (result !== 'granted') return;
+      }
+      if (Notification.permission === 'denied') {
+        setSupported(false);
+        return;
+      }
+    }
+    const next = !enabled;
+    setEnabled(next);
+    updateIntegration('notifications', { enabled: next });
+  };
+
+  if (!supported) {
+    return (
+      <Button variant="ghost" size="sm" disabled>
+        Not supported
+      </Button>
+    );
+  }
+
+  return (
+    <button
+      className={`notif-toggle ${enabled ? 'on' : 'off'}`}
+      onClick={toggle}
+      aria-pressed={enabled}
+    >
+      <span className="notif-toggle-thumb" />
+    </button>
+  );
+}
+
+function GoogleCalendarIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }}>
+      <rect x="1.5" y="2.5" width="11" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.2"/>
+      <path d="M1.5 5.5h11M4.5 1v3M9.5 1v3M4 8h2M7 8h2M4 10.5h2M7 10.5h2" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function NotionIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }}>
+      <rect x="2" y="1.5" width="10" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.2"/>
+      <path d="M4 4.5h6M4 6.5h6M4 8.5h4" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function SlackIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }}>
+      <path d="M5 3.5a1.5 1.5 0 013 0 1.5 1.5 0 01-3 0zM5 9.5a1.5 1.5 0 013 0 1.5 1.5 0 01-3 0zM3.5 5a1.5 1.5 0 000 3 1.5 1.5 0 000-3zM9.5 5a1.5 1.5 0 000 3 1.5 1.5 0 000-3z" stroke="currentColor" strokeWidth="1.2"/>
+    </svg>
+  );
+}
+
+function NotificationIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }}>
+      <path d="M7 1.5a4 4 0 014 4v2.5l1.5 2H1.5L3 7.5V5.5a4 4 0 014-4z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+      <path d="M5.5 11a1.5 1.5 0 003 0" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
     </svg>
   );
 }

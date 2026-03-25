@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Cadence Station",
+  "short_name": "Cadence",
+  "description": "Start a focus session directly from your browser.",
+  "version": "1.0.0",
+  "icons": {
+    "16": "../public/icon-192.png",
+    "48": "../public/icon-192.png",
+    "128": "../public/icon-512.png"
+  },
+  "permissions": ["storage", "notifications"],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Cadence Station"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icon-192.png"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
